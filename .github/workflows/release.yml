@@ -1,0 +1,34 @@
+# Every push to main (a merged pull request): VERSION is published as tag
+# vX.Y.Z and a GitHub release, unless that version already has its tag. A pull
+# request bumps VERSION to release; callers then move their pinned SHA to it
+# (Dependabot opens those pull requests).
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Releases in merge order; a run never cancels another
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # the tag and the release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the release rule reads the v* tags
+          persist-credentials: false
+      - uses: ./actions/release
+        with:
+          mode: publish

@@ -1,0 +1,19 @@
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Agents' local state
+.claude/settings.local.json
+.claude/autoharness/
+.remember/
+
+# Python (release.py's and bootstrap.sh's tests)
+__pycache__/

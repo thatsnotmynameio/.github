@@ -1,0 +1,55 @@
+# The release by version bump. `check` (pull requests): the version file's
+# version is MAJOR.MINOR.PATCH and not below the latest release. `publish`
+# (pushes to main): tags that version vX.Y.Z and publishes a GitHub release
+# with generated notes, unless it already has its tag. The caller checks out
+# with fetch-depth: 0 (the tags); publish needs contents: write.
+name: Release by version bump
+description: Checks or publishes the version in VERSION (or a .json or .toml) as tag vX.Y.Z and a GitHub release.
+
+inputs:
+  mode:
+    description: check or publish
+    required: true
+  version-file:
+    description: VERSION (the whole file), a .json (its version) or a .toml (its project.version)
+    default: VERSION
+  token:
+    description: The token that creates the release (publish)
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Refuse an unknown mode
+      if: inputs.mode != 'check' && inputs.mode != 'publish'
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+      run: |
+        echo "::error::mode must be check or publish, not '$MODE'"
+        exit 1
+
+    - name: Check the version
+      if: inputs.mode == 'check'
+      shell: bash
+      env:
+        VERSION_FILE: ${{ inputs.version-file }}
+      run: python3 "$GITHUB_ACTION_PATH/release.py" check "$VERSION_FILE"
+
+    - name: Find the tag to publish
+      id: next
+      if: inputs.mode == 'publish'
+      shell: bash
+      env:
+        VERSION_FILE: ${{ inputs.version-file }}
+      run: |
+        tag=$(python3 "$GITHUB_ACTION_PATH/release.py" next "$VERSION_FILE")
+        echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+    - name: Publish the release
+      if: inputs.mode == 'publish' && steps.next.outputs.tag != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        TAG: ${{ steps.next.outputs.tag }}
+      run: gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --generate-notes
