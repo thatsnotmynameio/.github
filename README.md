@@ -41,9 +41,11 @@ Both need a checkout with `fetch-depth: 0`. Versions start at `0.1.0`.
 ## Bootstrap
 
 ```sh
-gh repo clone thatsnotmynameio/.github -- --depth 1
-.github/scripts/bootstrap.sh thatsnotmynameio/<repo> [--checks "a,b,c"] [--sonar] [--template]
+gh repo clone thatsnotmynameio/.github /tmp/thatsnotmynameio-github -- --depth 1
+/tmp/thatsnotmynameio-github/scripts/bootstrap.sh thatsnotmynameio/<repo> [--checks "a,b,c"] [--sonar] [--template]
 ```
+
+Clone it outside the target repository: a clone named `.github` inside it would collide with its own `.github/`.
 
 Idempotent, as an admin of the repository:
 
@@ -51,7 +53,7 @@ Idempotent, as an admin of the repository:
 - **Security:** Dependabot alerts and security updates, private vulnerability reporting, secret scanning and push protection, CodeQL's default setup. On a private repository without GitHub Advanced Security, a refused one warns and the script goes on.
 - **Ruleset `checks`:**
   - It targets the default branch. Its required status checks come from GitHub Actions and default to `version`, `actionlint / actionlint` and `docs / docs.page check`.
-  - It also requires code scanning, but only when CodeQL's default setup took. A repository with no code yet has no language for CodeQL, so run the script again once there is code.
+  - It also requires code scanning when CodeQL's default setup took. GitHub accepts that setup even for a repository with no code yet, and the rule doesn't block a pull request before CodeQL has analysed anything.
 - **`--sonar`:** sets the variable `SONAR_ENABLED=true`. **`--template`:** marks the repository as a template.
 
 The organization ruleset "main rule" (pull requests, squash, no force push or deletion, threads resolved) applies to every repository by itself.
