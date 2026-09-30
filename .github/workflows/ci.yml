@@ -1,0 +1,53 @@
+# This repository's checks on every pull request: actionlint (through its own
+# reusable workflow), shellcheck on the bootstrap, the release action's and the
+# bootstrap's tests, and the release rule on VERSION.
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actionlint:
+    uses: ./.github/workflows/actionlint.yml
+
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: shellcheck scripts/bootstrap.sh
+
+  unittest:
+    name: unittest
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s actions/release -v
+      - run: python3 -m unittest discover -s scripts -v
+
+  version:
+    name: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the release rule reads the v* tags
+          persist-credentials: false
+      - uses: ./actions/release
+        with:
+          mode: check

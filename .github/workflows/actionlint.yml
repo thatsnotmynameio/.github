@@ -1,0 +1,33 @@
+# actionlint over the caller's workflows (.github/workflows), with the
+# runner's shellcheck on every run: script. The binary is actionlint's official
+# release, checked against its published sha256; bump VERSION and SHA256
+# together by hand (Dependabot doesn't see them). Its check is
+# "<caller job> / actionlint".
+name: actionlint
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install actionlint
+        env:
+          VERSION: 1.7.12
+          SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl -fsSLo "$archive" "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/actionlint_${VERSION}_linux_amd64.tar.gz"
+          echo "${SHA256}  $archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+      - name: Run actionlint
+        run: '"$RUNNER_TEMP/actionlint" -color'
